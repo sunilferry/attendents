@@ -72,6 +72,14 @@ class PrefManager {
     return prefs!.getString('photo') ?? '';
   }
 
+  dynamic setOffice(String office) async {
+    return prefs!.setString('office', office);
+  }
+
+  String getOffice() {
+    return prefs!.getString('office') ?? '';
+  }
+
 
 
   clearPreference(){

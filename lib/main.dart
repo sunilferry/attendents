@@ -1,16 +1,11 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_face_api_beta/face_api.dart' as Regula;
 import 'package:updgme_app/helper/pref_manager.dart';
 import 'package:updgme_app/networks/api_calls.dart';
 import 'package:updgme_app/screens/home.dart';
 import 'package:updgme_app/screens/login.dart';
-import 'package:updgme_app/screens/punch_attendance.dart';
 
 void main() => runApp(
     new MaterialApp(debugShowCheckedModeBanner: false, home: new MyApp()));
@@ -27,17 +22,19 @@ class _MyAppState extends State<MyApp> {
     SystemChrome.setSystemUIOverlayStyle(
         SystemUiOverlayStyle(statusBarColor: Colors.blue));
     initialize();
-
   }
 
   initialize() async {
     ApiCalls.getInstance();
     await PrefManager.getInstance();
     Future.delayed(const Duration(milliseconds: 2000), () {
-      if(PrefManager.prefManager==null||PrefManager.prefManager!.getId().isEmpty){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
-      }else{
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Home()));
+      if (PrefManager.prefManager == null ||
+          PrefManager.prefManager!.getId().isEmpty) {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Login()));
+      } else {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Home()));
       }
     });
   }

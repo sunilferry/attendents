@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:updgme_app/models/attendant_list_model.dart';
 import 'package:updgme_app/models/login_model.dart';
 import 'package:updgme_app/models/profile_model.dart';
+import 'package:updgme_app/models/salary_model.dart';
 
 class ApiCalls {
   static const String baseUrl = 'http://janshakti.upsdc.gov.in/api/';
@@ -31,9 +32,7 @@ class ApiCalls {
           body: req,
           headers: header);
       print(res.body);
-      if(res.body==null){
-        return null;
-      }
+
       if (res.statusCode == 200) {
         return loginResponseFromJson(res.body);
       } else {
@@ -77,6 +76,27 @@ class ApiCalls {
       print(res.body);
       if (res.statusCode == 200) {
         return attendantListResponseFromJson(res.body);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+
+  Future<SalaryListResponse?> getSalary( String token) async {
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization':'Bearer ' + token
+    };
+    try {
+      final res = await http.get(
+          Uri.parse(baseUrl + "AttendanceApi/GetWagesList"),
+          headers: header);
+      print(res.body);
+      if (res.statusCode == 200) {
+        return salaryListResponseFromJson(res.body);
       } else {
         return null;
       }

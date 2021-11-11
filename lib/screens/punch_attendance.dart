@@ -5,56 +5,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_face_api_beta/face_api.dart' as Regula;
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:lottie/lottie.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:lottie/lottie.dart';
 import 'package:updgme_app/helper/constants.dart';
-
-import 'home.dart';
+import 'package:updgme_app/helper/pref_manager.dart';
 
 class PunchAttendance extends StatefulWidget {
   @override
   _PunchAttendanceState createState() => _PunchAttendanceState();
 }
 
-enum SingingCharacter { punchIn, out ,non}
+enum SingingCharacter { punchIn, out, non }
 
 class _PunchAttendanceState extends State<PunchAttendance> {
   SingingCharacter? _character = SingingCharacter.non;
+
   //Regula.Image? image1;
   Regula.Image? image2;
   var img1 = Image.asset('assets/images/portrait.png');
   var img2 = Image.asset('assets/images/portrait.png');
   String _similarity = "nil";
   Uint8List? bytes;
-  int count=0;
-  String machMessage='';
+  int count = 0;
+  double finalDistance = -1;
+  String machMessage = '', unit = '', address = '';
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-   getLocation();
-
-
+    getLocation();
   }
 
-  Future<String?> networkImageToBase64(String imageUrl) async {
-    http.Response response = await http.get(Uri.parse(imageUrl));
-    final bytes = response.bodyBytes;
-    return (bytes != null ? base64Encode(bytes) : null);
-
-  }
-
-  getLocation()async{
-    Position position=await _determinePosition();
-    print(position.longitude);
-   /* String? base64=await networkImageToBase64("http://janshakti.upsdc.gov.in/Upload/Employee/1_(26)_jpg-2021-Nov-09-16-31-14-547.jpg");
-    print(base64);
-
-    image1 = new Regula.Image();
-    image1!.bitmap =base64!;
-    image1!.imageType = Regula.ImageType.IMAGE_TYPE_LIVE;*/
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,12 +61,20 @@ class _PunchAttendanceState extends State<PunchAttendance> {
                           Column(
                             children: [
                               Lottie.asset('assets/walk.json', height: 70),
-                              Text('Lucknow')
+                              Container(
+                                  margin: EdgeInsets.only(top: 4),
+                                  constraints: BoxConstraints(maxWidth: 100),
+                                  child: Text(
+                                    '$address',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 10),
+                                  ))
                             ],
                           ),
                           Column(
                             children: [
-                              Text('25.4 m'),
+                              Text('${finalDistance.toStringAsFixed(2)} $unit'),
                               Image.asset(
                                 'assets/arrow.png',
                                 width: 120,
@@ -97,7 +88,15 @@ class _PunchAttendanceState extends State<PunchAttendance> {
                                 'assets/office.png',
                                 height: 70,
                               ),
-                              Text('Lucknow')
+                              Container(
+                                  margin: EdgeInsets.only(top: 4),
+                                  constraints: BoxConstraints(maxWidth: 100),
+                                  child: Text(
+                                    '${PrefManager.prefManager!.getOffice()}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 10),
+                                  ))
                             ],
                           ),
                         ],
@@ -106,7 +105,7 @@ class _PunchAttendanceState extends State<PunchAttendance> {
                         height: 16,
                       ),
                       Text(
-                        'You are 5.6 Meters away from office',
+                        'You are ${finalDistance.toStringAsFixed(2)} $unit away from office',
                         style: TextStyle(color: Colors.red),
                       ),
                       SizedBox(
@@ -126,22 +125,26 @@ class _PunchAttendanceState extends State<PunchAttendance> {
                         'Punch Attendance',
                         style: TextStyle(color: Colors.red, fontSize: 18),
                       ),
-                      SizedBox(height: 32,),
+                      SizedBox(
+                        height: 32,
+                      ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Row(children: [
-                            Radio<SingingCharacter>(
-                              value: SingingCharacter.punchIn,
-                              groupValue: _character,
-                              onChanged: (SingingCharacter? value) {
-                                setState(() {
-                                  _character = value;
-                                });
-                              },
-                            ),
-                            Text('Punch In')
-                          ],),
+                          Row(
+                            children: [
+                              Radio<SingingCharacter>(
+                                value: SingingCharacter.punchIn,
+                                groupValue: _character,
+                                onChanged: (SingingCharacter? value) {
+                                  setState(() {
+                                    _character = value;
+                                  });
+                                },
+                              ),
+                              Text('Punch In')
+                            ],
+                          ),
                           Row(
                             children: [
                               Radio<SingingCharacter>(
@@ -158,64 +161,52 @@ class _PunchAttendanceState extends State<PunchAttendance> {
                           )
                         ],
                       ),
-                      SizedBox(height: 32,),
+                      SizedBox(
+                        height: 32,
+                      ),
                       Text(
                         'Please capture selfie to mark your attendance',
                       ),
-                      SizedBox(height: 32,),
+                      SizedBox(
+                        height: 32,
+                      ),
                       GestureDetector(
-                        onTap: (){
+                        onTap: () {
                           Regula.FaceSDK.presentFaceCaptureActivity()
                               .then((response) {
-                                String base=Regula.FaceCaptureResponse.fromJson(
+                            String base = Regula.FaceCaptureResponse.fromJson(
                                     json.decode(response!))!
-                                    .image!
-                                    .bitmap!
-                                    .replaceAll("\n", "");
-                            print("Sunil" + base );
+                                .image!
+                                .bitmap!
+                                .replaceAll("\n", "");
 
                             bytes = base64Decode(base);
-                            machMessage='';
-                            setImage(false, base64Decode(base), Regula.ImageType.IMAGE_TYPE_LIVE);
-
-                           /* if(count==0){
-                              count=1;
-                              setImage(
-
-                                  true,
-                                  base64Decode(Regula.FaceCaptureResponse.fromJson(
-                                      json.decode(response))!
-                                      .image!
-                                      .bitmap!
-                                      .replaceAll("\n", "")),
-                                  Regula.ImageType.IMAGE_TYPE_LIVE);
-                            }else{
-                              count=0;
-                              setImage(
-                                  false,
-                                  base64Decode(Regula.FaceCaptureResponse.fromJson(
-                                      json.decode(response))!
-                                      .image!
-                                      .bitmap!
-                                      .replaceAll("\n", "")),
-                                  Regula.ImageType.IMAGE_TYPE_LIVE);
-                            }*/
+                            machMessage = '';
+                            setImage(false, base64Decode(base),
+                                Regula.ImageType.IMAGE_TYPE_LIVE);
 
                           });
                         },
                         child: bytes != null
                             ? Container(
-                            height: 100, width: 100, child: Image.memory(bytes!))
-                            : Image.asset('assets/selfie.png',height: 100,),
+                                height: 100,
+                                width: 100,
+                                child: Image.memory(bytes!))
+                            : Image.asset(
+                                'assets/selfie.png',
+                                height: 100,
+                              ),
                       ),
-
-                      SizedBox(height: 32,),
+                      SizedBox(
+                        height: 32,
+                      ),
                       Container(
                           width: double.infinity,
-                          child: ElevatedButton(onPressed: (){
-
-                            matchFaces();
-                          }, child: Text('SUBMIT')))
+                          child: ElevatedButton(
+                              onPressed: () {
+                                matchFaces();
+                              },
+                              child: Text('SUBMIT')))
                     ],
                   ),
                 ),
@@ -230,23 +221,16 @@ class _PunchAttendanceState extends State<PunchAttendance> {
   setImage(bool first, List<int> imageFile, int type) {
     print("bollean $first");
     if (first) {
-
       image1 = new Regula.Image();
       image1!.bitmap = base64Encode(imageFile);
       image1!.imageType = type;
-
     } else {
       image2 = new Regula.Image();
       image2!.bitmap = base64Encode(imageFile);
       image2!.imageType = type;
-
     }
 
-    setState(() {
-
-    });
-
-
+    setState(() {});
   }
 
   matchFaces() {
@@ -261,16 +245,16 @@ class _PunchAttendanceState extends State<PunchAttendance> {
       var response = Regula.MatchFacesResponse.fromJson(json.decode(value));
       var matchedFaces = response!.matchedFaces;
       _similarity = matchedFaces.length > 0
-          ? ((matchedFaces[0]!.similarity! * 100).toStringAsFixed(2) )
+          ? ((matchedFaces[0]!.similarity! * 100).toStringAsFixed(2))
           : "error";
-      if(_similarity=='error'){
-        machMessage='Failed';
-      }else{
-        double match=double.parse(_similarity);
-        if(match>70){
-          machMessage='Matched';
-        }else{
-          machMessage='Failed';
+      if (_similarity == 'error') {
+        machMessage = 'Failed';
+      } else {
+        double match = double.parse(_similarity);
+        if (match > 70) {
+          machMessage = 'Matched';
+        } else {
+          machMessage = 'Failed';
         }
       }
 
@@ -278,31 +262,20 @@ class _PunchAttendanceState extends State<PunchAttendance> {
     });
   }
 
-  toast(String message){
+  toast(String message) {
     Fluttertoast.showToast(
         msg: message,
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
         timeInSecForIosWeb: 1,
-        fontSize: 16.0
-    );
+        fontSize: 16.0);
   }
 
-
-  /// Determine the current position of the device.
-  ///
-  /// When the location services are not enabled or permissions
-  /// are denied the `Future` will return an error.
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
-
-    // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       return Future.error('Location services are disabled.');
     }
 
@@ -310,24 +283,52 @@ class _PunchAttendanceState extends State<PunchAttendance> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
         return Future.error('Location permissions are denied');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
     }
-
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
     return await Geolocator.getCurrentPosition();
   }
 
+  Future<String?> networkImageToBase64(String imageUrl) async {
+    http.Response response = await http.get(Uri.parse(imageUrl));
+    final bytes = response.bodyBytes;
+    return (bytes != null ? base64Encode(bytes) : null);
+  }
+
+  getLocation() async {
+    Position position = await _determinePosition();
+    print(position.longitude);
+    List<Placemark> newPlace =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
+    Placemark placeMark = newPlace[0];
+    String name = placeMark.name!;
+    String subLocality = placeMark.subLocality!;
+    String locality = placeMark.locality!;
+
+    address = "$name, $subLocality, $locality";
+    print(address);
+
+    if (latlongs.length < 1) {
+      print('No office attached');
+    } else {
+      print(latlongs[0].latitude);
+      finalDistance = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          double.parse(latlongs[0].latitude),
+          double.parse(latlongs[0].longitude));
+      if (finalDistance < 100) {
+        unit = 'Meters';
+      } else {
+        unit = 'Km';
+      }
+    }
+
+    setState(() {});
+  }
 }

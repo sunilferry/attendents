@@ -10,7 +10,10 @@ import 'package:updgme_app/helper/pref_manager.dart';
 import 'package:updgme_app/models/attendant_list_model.dart';
 import 'package:updgme_app/models/profile_model.dart';
 import 'package:updgme_app/networks/api_calls.dart';
+import 'package:updgme_app/screens/attendants.dart';
+import 'package:updgme_app/screens/profile.dart';
 import 'package:updgme_app/screens/punch_attendance.dart';
+import 'package:updgme_app/screens/salary.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -18,7 +21,6 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-
   @override
   void initState() {
     // TODO: implement initState
@@ -37,9 +39,15 @@ class _HomeState extends State<Home> {
         .getProfile(PrefManager.prefManager!.getToken());
     if (profileResponse != null && profileResponse!.status) {
       PrefManager.prefManager!.setPhoto(profileResponse!.data.obj.photoUrl);
+      PrefManager.prefManager!.setName(profileResponse!.data.obj.name);
+      PrefManager.prefManager!.setEmail(profileResponse!.data.obj.email);
+      PrefManager.prefManager!.setMobile(profileResponse!.data.obj.mobile);
+      PrefManager.prefManager!
+          .setOffice(profileResponse!.data.obj.organizationName);
+      latlongs = profileResponse!.data.latLongList.result;
 
       String? base64 =
-      await networkImageToBase64(profileResponse!.data.obj.photoUrl);
+          await networkImageToBase64(profileResponse!.data.obj.photoUrl);
       print(base64);
       image1 = new Regula.Image();
       image1!.bitmap = base64!;
@@ -48,13 +56,10 @@ class _HomeState extends State<Home> {
       var formatter = new DateFormat('dd-MM-yyyy');
       String formattedDate = formatter.format(now);
 
-      final requestParam = {'fromDate': formattedDate,
-        'toDate': formattedDate};
-      attendantListResponse = await ApiCalls.apiCalls!.getAttendants(
-          requestParam, PrefManager.prefManager!.getToken());
-      setState(() {
-
-      });
+      final requestParam = {'fromDate': formattedDate, 'toDate': formattedDate};
+      attendantListResponse = await ApiCalls.apiCalls!
+          .getAttendants(requestParam, PrefManager.prefManager!.getToken());
+      setState(() {});
     }
   }
 
@@ -100,8 +105,13 @@ class _HomeState extends State<Home> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.qr_code, color: Colors.white,),
-                              SizedBox(width: 8,),
+                              Icon(
+                                Icons.qr_code,
+                                color: Colors.white,
+                              ),
+                              SizedBox(
+                                width: 8,
+                              ),
                               Text(
                                 'SCAN QR',
                                 style: TextStyle(color: Colors.white),
@@ -109,26 +119,73 @@ class _HomeState extends State<Home> {
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.more_vert_rounded,
-                          color: Colors.white,
-                        )
+                        PopupMenuButton(
+                            enabled: true,
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: Colors.white,
+                            ),
+                            onSelected: (value) {
+                              if (value == 'profile') {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => Profile()));
+                              }
+                            },
+                            itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    child: Text("Profile"),
+                                    value: "profile",
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text("Device Info"),
+                                    value: "Second",
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text("Privacy Policy"),
+                                    value: "Second",
+                                  ),
+                                  PopupMenuItem(
+                                    child: Text("Logout"),
+                                    value: "Second",
+                                  ),
+                                ]),
+
+                        /*   GestureDetector(
+                          onTap: (){
+
+                          },
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            color: Colors.white,
+                          ),
+                        )*/
                       ],
                     )
                   ],
                 ),
-                SizedBox(height: 24,),
+                SizedBox(
+                  height: 24,
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Image.asset('assets/logo.png', height: 80,),
+                    Image.asset(
+                      'assets/logo.png',
+                      height: 80,
+                    ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Good Day,', style: TextStyle(
-                            color: Colors.yellow, fontSize: 24),),
-                        Text(PrefManager.prefManager!.getName(),
-                          style: TextStyle(color: Colors.white, fontSize: 18),)
+                        Text(
+                          'Good Day,',
+                          style: TextStyle(color: Colors.yellow, fontSize: 24),
+                        ),
+                        Text(
+                          PrefManager.prefManager!.getName(),
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        )
                       ],
                     )
                   ],
@@ -151,17 +208,23 @@ class _HomeState extends State<Home> {
                     Container(
                       margin: EdgeInsets.all(16),
                       child: Column(
-
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Punch Attendance', style: TextStyle(
-                              fontSize: 18),),
-                          Text('Daily punch your attendance', style: TextStyle(
-                              color: Colors.blue),),
-                          SizedBox(height: 70,),
-                          Text('Have a nice day...', style: TextStyle(
-                              color: Colors.blue),),
-
+                          Text(
+                            'Punch Attendance',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          Text(
+                            'Daily punch your attendance',
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                          SizedBox(
+                            height: 70,
+                          ),
+                          Text(
+                            'Have a nice day...',
+                            style: TextStyle(color: Colors.blue),
+                          ),
                         ],
                       ),
                     ),
@@ -186,7 +249,7 @@ class _HomeState extends State<Home> {
                             decoration: BoxDecoration(
                                 color: Colors.blue,
                                 border:
-                                Border.all(width: 1, color: Colors.blue),
+                                    Border.all(width: 1, color: Colors.blue),
                                 borderRadius: BorderRadius.circular(55)),
                             child: Stack(
                               children: [
@@ -208,85 +271,116 @@ class _HomeState extends State<Home> {
               ),
               Row(
                 children: [
-                  Card(
-                    margin: EdgeInsets.only(left: 16, right: 4, top: 8),
-                    child: Container(
-                      width: MediaQuery
-                          .of(context)
-                          .size
-                          .width / 2 - 20,
-                      height: MediaQuery
-                          .of(context)
-                          .size
-                          .width / 2 - 20,
-                      decoration: BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage('assets/profile.png')
-                          )
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => Attendants()));
+                    },
+                    child: Card(
+                      margin: EdgeInsets.only(left: 16, right: 4, top: 8),
+                      child: Container(
+                        width: MediaQuery.of(context).size.width / 2 - 20,
+                        height: MediaQuery.of(context).size.width / 2 - 20,
+                        decoration: BoxDecoration(
+                            image: DecorationImage(
+                                image: AssetImage('assets/profile.png'))),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('View\nAttendance',textAlign: TextAlign.center,style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold,color: Colors.white),),
+                            SizedBox(height: 8,),
+                            Text('(View your Daily Attendance)',style: TextStyle(fontSize: 10,color: Colors.white),),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  Card(
-                    margin: EdgeInsets.only(left: 4, right: 16, top: 8),
-                    child: Container(
-                      width: MediaQuery
-                          .of(context)
-                          .size
-                          .width / 2 - 20,
-                      height: MediaQuery
-                          .of(context)
-                          .size
-                          .width / 2 - 20,
-                      decoration: BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage('assets/profile.png')
-                          )
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => Salary()));
+                    },
+                    child: Card(
+                      margin: EdgeInsets.only(left: 4, right: 16, top: 8),
+                      child: Container(
+                        width: MediaQuery.of(context).size.width / 2 - 20,
+                        height: MediaQuery.of(context).size.width / 2 - 20,
+                        decoration: BoxDecoration(
+                            image: DecorationImage(
+                                image: AssetImage('assets/profile.png'))),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Salary Details',style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold,color: Colors.white),),
+                            SizedBox(height: 8,),
+                            Text('(See your salary details)',style: TextStyle(fontSize: 10,color: Colors.white),),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8,),
+              SizedBox(
+                height: 8,
+              ),
               Container(
                   margin: EdgeInsets.only(left: 16, top: 8),
-                  child: Text('Today\'s Attendance', style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),)),
-
+                  child: Text(
+                    'Today\'s Attendance',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  )),
               Container(
                 margin: EdgeInsets.only(left: 8, right: 8),
-                child: attendantListResponse==null?Center(child: Text('No record found!')):ListView.builder(
-                    padding: EdgeInsets.only(top: 0),
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: attendantListResponse!.data.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return Card(
-                        child: Container(
-                          margin: EdgeInsets.all(8),
-                          child: Column(
-                            children: [
-                              Row(
+                child: attendantListResponse == null
+                    ? Center(child: Text('No record found!'))
+                    : ListView.builder(
+                        padding: EdgeInsets.only(top: 0),
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: attendantListResponse!.data.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return Card(
+                            child: Container(
+                              margin: EdgeInsets.all(8),
+                              child: Column(
                                 children: [
-                                  Text('Date: ',
-                                    style: TextStyle(color: Colors.grey),),
-                                  Text(attendantListResponse!.data[index].attendanceDate, style: TextStyle(
-                                      color: Colors.black, fontSize: 16),)
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Date: ',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                      Text(
+                                        attendantListResponse!
+                                            .data[index].attendanceDate,
+                                        style: TextStyle(
+                                            color: Colors.black, fontSize: 16),
+                                      )
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: 8,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Punch Type: ',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                      Text(
+                                        attendantListResponse!
+                                            .data[index].attendanceType,
+                                        style: TextStyle(
+                                            color: Colors.black, fontSize: 16),
+                                      )
+                                    ],
+                                  )
                                 ],
                               ),
-                              SizedBox(height: 8,),
-                              Row(
-                                children: [
-                                  Text('Punch Type: ',
-                                    style: TextStyle(color: Colors.grey),),
-                                  Text(attendantListResponse!.data[index].attendanceType, style: TextStyle(
-                                      color: Colors.black, fontSize: 16),)
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                            ),
+                          );
+                        }),
               )
             ],
           ),
